@@ -30,20 +30,18 @@ func New(alfa float64) *Tree {
 }
 
 func (t *Tree) Ins(k Key) bool {
-	return ins(&t.root, k)
-}
+	for x, p := t.root, &t.root; ; {
+		if x == nil {
+			*p = &node{key: k}
+			return true
+		}
 
-func ins(root **node, k Key) bool {
-	if *root == nil {
-		*root = &node{key: k}
-		return true
+		eq, i := cmp(x.key, k)
+		if eq {
+			return false
+		}
+
+		p = &x.c[i]
+		x = x.c[i]
 	}
-
-	x := *root
-	eq, i := cmp(x.key, k)
-	if eq {
-		return false
-	}
-
-	return ins(&x.c[i], k)
 }
