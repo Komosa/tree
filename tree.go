@@ -45,3 +45,33 @@ func (t *Tree) Ins(k Key) bool {
 		x = x.c[i]
 	}
 }
+
+type iterator []*node
+
+func (t Tree) First() iterator {
+	var s iterator
+
+	for x := t.root; x != nil; x = x.c[0] {
+		s = append(s, x)
+	}
+	return s
+}
+
+func (it iterator) Ok() bool {
+	return len(it) > 0
+}
+
+// User must be sure that Ok() is true before call.
+func (it iterator) Next() iterator {
+	x := it[len(it)-1].c[1]
+	it = it[:len(it)-1]
+	for ; x != nil; x = x.c[0] {
+		it = append(it, x)
+	}
+	return it
+}
+
+// User must be sure that Ok() is true before call.
+func (it iterator) Key() Key {
+	return it[len(it)-1].key
+}

@@ -25,11 +25,19 @@ func TestInsert(t *testing.T) {
 		{3, false},
 		{7, true},
 		{7, false},
+		{6, true},
 	}
 	for _, tc := range tcs {
 		inserted := tree.Ins(tc.key)
 		eq(t, inserted, tc.ok, tc)
 	}
+
+	var seq []Key
+	for it := tree.First(); it.Ok(); it = it.Next() {
+		seq = append(seq, it.Key())
+	}
+
+	eq(t, seq, []Key{1, 2, 3, 4, 6, 7})
 }
 
 func eq(tb testing.TB, act, exp interface{}, info ...interface{}) {
