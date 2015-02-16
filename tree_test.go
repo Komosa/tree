@@ -37,7 +37,17 @@ func TestInsert(t *testing.T) {
 		seq = append(seq, it.Key())
 	}
 
-	eq(t, seq, []Key{1, 2, 3, 4, 6, 7})
+	keys := []Key{1, 2, 3, 4, 6, 7}
+	eq(t, seq, keys)
+
+	for _, k := range keys {
+		eq(t, tree.Exist(k), true, k)
+		eq(t, tree.Exist(-k), false, -k)
+	}
+	eq(t, tree.Exist(Key(0)), false)
+	eq(t, tree.Exist(Key(5)), false)
+	eq(t, tree.Exist(Key(8)), false)
+	eq(t, tree.Exist(Key(9)), false)
 }
 
 func eq(tb testing.TB, act, exp interface{}, info ...interface{}) {

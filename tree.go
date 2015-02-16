@@ -46,6 +46,17 @@ func (t *Tree) Ins(k Key) bool {
 	}
 }
 
+func (t Tree) Exist(k Key) bool {
+	for x := t.root; x != nil; {
+		eq, i := cmp(x, k)
+		if eq {
+			return true
+		}
+		x = x.c[i]
+	}
+	return false
+}
+
 type iterator []*node
 
 func (t Tree) First() iterator {
