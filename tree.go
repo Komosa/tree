@@ -8,11 +8,11 @@ func Less(a, b Key) bool {
 func Eq(a, b Key) bool {
 	return a == b
 }
-func cmp(a, b Key) (eq bool, idx int) {
-	if Less(a, b) {
+func cmp(x *node, k Key) (eq bool, idx int) {
+	if Less(x.key, k) {
 		return false, 1
 	}
-	return Eq(a, b), 0
+	return Eq(x.key, k), 0
 }
 
 type node struct {
@@ -36,7 +36,7 @@ func (t *Tree) Ins(k Key) bool {
 			return true
 		}
 
-		eq, i := cmp(x.key, k)
+		eq, i := cmp(x, k)
 		if eq {
 			return false
 		}
