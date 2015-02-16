@@ -50,6 +50,68 @@ func TestInsert(t *testing.T) {
 	eq(t, tree.Exist(Key(9)), false)
 }
 
+func TestDelete(t *testing.T) {
+	const (
+		zero = Key(iota)
+		one
+		two
+		three
+	)
+
+	tree := New(.65)
+	eq(t, false, tree.Del(one))
+
+	tree.Ins(one)
+	eq(t, false, tree.Del(two))
+	eq(t, true, tree.Del(one))
+	eq(t, false, tree.Del(one))
+	eq(t, false, tree.Del(two))
+
+	tree.Ins(one)
+	tree.Ins(two)
+	eq(t, false, tree.Del(zero))
+	eq(t, false, tree.Del(three))
+	eq(t, true, tree.Del(one))
+	eq(t, false, tree.Del(one))
+	eq(t, true, tree.Del(two))
+
+	tree.Ins(one)
+	tree.Ins(two)
+	tree.Ins(zero)
+	eq(t, false, tree.Del(three))
+	eq(t, true, tree.Del(one))
+	eq(t, false, tree.Del(one))
+	eq(t, true, tree.Del(zero))
+	eq(t, false, tree.Del(zero))
+	eq(t, true, tree.Del(two))
+	eq(t, false, tree.Del(two))
+
+	tree.Ins(one)
+	tree.Ins(two)
+	tree.Ins(zero)
+	eq(t, true, tree.Del(one))
+	eq(t, true, tree.Del(two))
+	eq(t, true, tree.Del(zero))
+
+	tree.Ins(one)
+	tree.Ins(two)
+	tree.Ins(zero)
+	tree.Ins(three)
+	eq(t, true, tree.Del(one))
+	eq(t, true, tree.Del(three))
+	eq(t, true, tree.Del(two))
+	eq(t, true, tree.Del(zero))
+
+	tree.Ins(one)
+	tree.Ins(zero)
+	tree.Ins(three)
+	tree.Ins(two)
+	eq(t, true, tree.Del(one))
+	eq(t, true, tree.Del(three))
+	eq(t, true, tree.Del(two))
+	eq(t, true, tree.Del(zero))
+}
+
 func eq(tb testing.TB, act, exp interface{}, info ...interface{}) {
 	if !reflect.DeepEqual(act, exp) {
 		_, file, line, _ := runtime.Caller(1)

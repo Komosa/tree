@@ -57,6 +57,44 @@ func (t Tree) Exist(k Key) bool {
 	return false
 }
 
+func (t *Tree) Del(k Key) bool {
+	p := &t.root
+	x := t.root
+	for x != nil {
+		eq, i := cmp(x, k)
+		if eq {
+			break
+		}
+		p = &x.c[i]
+		x = x.c[i]
+	}
+
+	if x == nil {
+		return false
+	}
+
+	if x.c[0] != nil && x.c[1] != nil {
+		y := x.c[1]
+		p := &x.c[1]
+		for y.c[0] != nil {
+			p = &y.c[0]
+			y = y.c[0]
+		}
+
+		*p = y.c[1] // it is fine both for nil and non-nil
+
+		x.key = y.key
+		return true
+	}
+
+	if x.c[0] == nil {
+		*p = x.c[1] // it is fine also for nil
+	} else {
+		*p = x.c[0]
+	}
+	return true
+}
+
 type iterator []*node
 
 func (t Tree) First() iterator {
