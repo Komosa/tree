@@ -23,9 +23,10 @@ type node struct {
 }
 
 type Tree struct {
-	root *node
-	alfa float64
-	size int
+	root    *node
+	alfa    float64
+	size    int
+	maxsize int
 }
 
 func New(alfa float64) *Tree {
@@ -54,6 +55,9 @@ func (t *Tree) Ins(k Key) bool {
 	x := path[len(path)-1]
 	_, j := cmp(x, k)
 	x.c[j] = &node{key: k}
+	if t.size > t.maxsize {
+		t.maxsize = t.size
+	}
 
 	if pow(1/t.alfa, len(path)) <= float64(t.size) {
 		return true
@@ -77,7 +81,7 @@ func (t *Tree) Ins(k Key) bool {
 	x = rebalance(path[scapegoat], ssize)
 	if scapegoat == 0 {
 		t.root = x
-		//~ t.maxsize = ssize
+		t.maxsize = ssize
 	} else {
 		_, i := cmp(path[scapegoat-1], k)
 		path[scapegoat-1].c[i] = x
@@ -124,13 +128,16 @@ func (t *Tree) Del(k Key) bool {
 		*p = y.c[1] // it is fine both for nil and non-nil
 
 		x.key = y.key
-		return true
-	}
-
-	if x.c[0] == nil {
+	} else if x.c[0] == nil {
 		*p = x.c[1] // it is fine also for nil
 	} else {
 		*p = x.c[0]
+	}
+
+	t.size--
+	if t.size > 0 && float64(t.size) <= t.alfa*float64(t.maxsize) {
+		t.maxsize = t.size
+		t.root = rebalance(t.root, t.size)
 	}
 	return true
 }
