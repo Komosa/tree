@@ -141,7 +141,7 @@ func TestRebalance(t *testing.T) {
 
 		for tc := 1; tc <= n; tc++ {
 			p := rand.Perm(n)
-			tree := New(.65)
+			tree := New(rand.Float64()/2 + 0.5)
 
 			for _, x := range p {
 				tree.Ins(Key(x))

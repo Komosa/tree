@@ -1,5 +1,7 @@
 package scapegoat
 
+import "math"
+
 type Key int
 
 func Less(a, b Key) bool {
@@ -23,6 +25,7 @@ type node struct {
 type Tree struct {
 	root *node
 	alfa float64
+	size int
 }
 
 func New(alfa float64) *Tree {
@@ -30,20 +33,57 @@ func New(alfa float64) *Tree {
 }
 
 func (t *Tree) Ins(k Key) bool {
-	for x, p := t.root, &t.root; ; {
-		if x == nil {
-			*p = &node{key: k}
-			return true
-		}
+	t.size++
+	if t.root == nil {
+		t.root = &node{key: k}
+		return true
+	}
 
+	var path []*node
+	for x := t.root; x != nil; {
 		eq, i := cmp(x, k)
 		if eq {
+			t.size--
 			return false
 		}
 
-		p = &x.c[i]
+		path = append(path, x)
 		x = x.c[i]
 	}
+
+	x := path[len(path)-1]
+	_, j := cmp(x, k)
+	x.c[j] = &node{key: k}
+
+	if pow(1/t.alfa, len(path)) <= float64(t.size) {
+		return true
+	}
+
+	var scapegoat int
+	ssize := t.size
+	for i, childsize := len(path)-1, 1; i > 0; i-- {
+		x := path[i]
+		ochildsize := subsize(x.c[j^1])
+		currsize := childsize + ochildsize + 1
+		if math.Max(float64(childsize), float64(ochildsize)) > float64(currsize)*t.alfa {
+			scapegoat = i
+			ssize = currsize
+			break
+		}
+		childsize = currsize
+		_, j = cmp(path[i-1], k)
+	}
+
+	x = rebalance(path[scapegoat], ssize)
+	if scapegoat == 0 {
+		t.root = x
+		//~ t.maxsize = ssize
+	} else {
+		_, i := cmp(path[scapegoat-1], k)
+		path[scapegoat-1].c[i] = x
+	}
+
+	return true
 }
 
 func (t Tree) Exist(k Key) bool {
@@ -177,4 +217,23 @@ func goleft(x *node, it iterator) iterator {
 		it = append(it, x)
 	}
 	return it
+}
+
+func subsize(x *node) int {
+	if x == nil {
+		return 0
+	}
+	return 1 + subsize(x.c[0]) + subsize(x.c[1])
+}
+
+func pow(x float64, n int) float64 {
+	res := 1.0
+	for n > 0 {
+		if n&1 == 1 {
+			res *= x
+		}
+		x *= x
+		n >>= 1
+	}
+	return res
 }
