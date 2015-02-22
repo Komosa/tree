@@ -1,6 +1,7 @@
 package scapegoat
 
 import (
+	"math/rand"
 	"path/filepath"
 	"reflect"
 	"runtime"
@@ -110,6 +111,53 @@ func TestDelete(t *testing.T) {
 	eq(t, true, tree.Del(three))
 	eq(t, true, tree.Del(two))
 	eq(t, true, tree.Del(zero))
+}
+
+func heightBalanced(x *node) bool {
+	min, max := -1, -1
+	var f func(*node, int)
+	f = func(x *node, curr int) {
+		if x == nil {
+			if min == -1 || curr < min {
+				min = curr
+			}
+			if curr > max {
+				max = curr
+			}
+			return
+		}
+		f(x.c[0], curr+1)
+		f(x.c[1], curr+1)
+	}
+	f(x, 0)
+	return min+1 >= max
+}
+
+func TestRebalance(t *testing.T) {
+	var expected []int
+
+	for n := 1; n < 100; n++ {
+		expected = append(expected, n-1)
+
+		for tc := 1; tc <= n; tc++ {
+			p := rand.Perm(n)
+			tree := New(.65)
+
+			for _, x := range p {
+				tree.Ins(Key(x))
+			}
+
+			tree.root = rebalance(tree.root, n)
+
+			var seq []int
+			for it := tree.First(); it.Ok(); it = it.Next() {
+				seq = append(seq, int(it.Key()))
+			}
+
+			eq(t, seq, expected, p)
+			eq(t, heightBalanced(tree.root), true)
+		}
+	}
 }
 
 func eq(tb testing.TB, act, exp interface{}, info ...interface{}) {

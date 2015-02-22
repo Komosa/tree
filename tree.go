@@ -95,15 +95,60 @@ func (t *Tree) Del(k Key) bool {
 	return true
 }
 
+func rebalance(x *node, subsize int) *node {
+	fullCnt := 1
+	for fullCnt*2+1 < subsize {
+		fullCnt += fullCnt + 1
+	}
+
+	evenLeft := subsize - fullCnt
+	even := make([]*node, 0, evenLeft+(evenLeft&1))
+	odd := make([]*node, 0, fullCnt)
+
+	for it := first(x); it.Ok(); {
+		x := it[len(it)-1]
+
+		if evenLeft > 0 && len(even) == len(odd) {
+			even = append(even, x)
+			evenLeft--
+		} else {
+			odd = append(odd, x)
+		}
+
+		it = goleft(x.c[1], it[:len(it)-1])
+	}
+
+	for _, x := range even {
+		x.c[0] = nil
+		x.c[1] = nil
+	}
+	if len(even)&1 == 1 {
+		even = append(even, nil)
+	}
+
+	for i, x := range odd {
+		j := ((i ^ (i + 1)) & (i + 1)) >> 1
+		if j == 0 {
+			if i < len(even) {
+				x.c[0] = even[i]
+				x.c[1] = even[i+1]
+			} else {
+				x.c[0] = nil
+				x.c[1] = nil
+			}
+		} else {
+			x.c[0] = odd[i-j]
+			x.c[1] = odd[i+j]
+		}
+	}
+
+	return odd[fullCnt/2]
+}
+
 type iterator []*node
 
 func (t Tree) First() iterator {
-	var s iterator
-
-	for x := t.root; x != nil; x = x.c[0] {
-		s = append(s, x)
-	}
-	return s
+	return first(t.root)
 }
 
 func (it iterator) Ok() bool {
@@ -114,13 +159,22 @@ func (it iterator) Ok() bool {
 func (it iterator) Next() iterator {
 	x := it[len(it)-1].c[1]
 	it = it[:len(it)-1]
-	for ; x != nil; x = x.c[0] {
-		it = append(it, x)
-	}
-	return it
+	return goleft(x, it)
 }
 
 // User must be sure that Ok() is true before call.
 func (it iterator) Key() Key {
 	return it[len(it)-1].key
+}
+
+// Make iterator over subtree rooted at given node.
+func first(x *node) iterator {
+	return goleft(x, iterator{})
+}
+
+func goleft(x *node, it iterator) iterator {
+	for ; x != nil; x = x.c[0] {
+		it = append(it, x)
+	}
+	return it
 }
