@@ -142,14 +142,17 @@ func (t *Tree) Del(k byte) bool {
 }
 
 func rebalance(x *node, subsize int) *node {
+	// we will construct full tree plus some (even) nodes appended to its leafs
 	fullCnt := 1
-	for fullCnt*2+1 < subsize {
+	for fullCnt <= subsize {
 		fullCnt += fullCnt + 1
 	}
-
+	fullCnt /= 2
 	evenLeft := subsize - fullCnt
-	even := make([]*node, 0, evenLeft+(evenLeft&1))
-	odd := make([]*node, 0, fullCnt)
+
+	d := make([]*node, subsize)
+	even := d[:0]
+	odd := d[evenLeft:evenLeft]
 
 	for it := first(x); it.Ok(); {
 		x := it[len(it)-1]
@@ -164,28 +167,17 @@ func rebalance(x *node, subsize int) *node {
 		it = goleft(x.c[1], it[:len(it)-1])
 	}
 
-	for _, x := range even {
+	for _, x := range d {
 		x.c[0] = nil
 		x.c[1] = nil
 	}
-	if len(even)&1 == 1 {
-		even = append(even, nil)
+	for i, x := range even {
+		odd[i&^1].c[i&1] = x
 	}
-
-	for i, x := range odd {
+	for i := 1; i < len(odd); i += 2 {
 		j := ((i ^ (i + 1)) & (i + 1)) >> 1
-		if j == 0 {
-			if i < len(even) {
-				x.c[0] = even[i]
-				x.c[1] = even[i+1]
-			} else {
-				x.c[0] = nil
-				x.c[1] = nil
-			}
-		} else {
-			x.c[0] = odd[i-j]
-			x.c[1] = odd[i+j]
-		}
+		odd[i].c[0] = odd[i-j]
+		odd[i].c[1] = odd[i+j]
 	}
 
 	return odd[fullCnt/2]
