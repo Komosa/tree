@@ -12,7 +12,7 @@ func TestInsert(t *testing.T) {
 	tree := New(.65)
 
 	tcs := []struct {
-		key Key
+		key byte
 		ok  bool
 	}{
 		{1, true},
@@ -33,27 +33,27 @@ func TestInsert(t *testing.T) {
 		eq(t, inserted, tc.ok, tc)
 	}
 
-	var seq []Key
+	var seq []byte
 	for it := tree.First(); it.Ok(); it = it.Next() {
 		seq = append(seq, it.Key())
 	}
 
-	keys := []Key{1, 2, 3, 4, 6, 7}
+	keys := []byte{1, 2, 3, 4, 6, 7}
 	eq(t, seq, keys)
 
 	for _, k := range keys {
 		eq(t, tree.Exist(k), true, k)
 		eq(t, tree.Exist(-k), false, -k)
 	}
-	eq(t, tree.Exist(Key(0)), false)
-	eq(t, tree.Exist(Key(5)), false)
-	eq(t, tree.Exist(Key(8)), false)
-	eq(t, tree.Exist(Key(9)), false)
+	eq(t, tree.Exist(0), false)
+	eq(t, tree.Exist(5), false)
+	eq(t, tree.Exist(8), false)
+	eq(t, tree.Exist(9), false)
 }
 
 func TestDelete(t *testing.T) {
 	const (
-		zero = Key(iota)
+		zero = iota
 		one
 		two
 		three
@@ -134,24 +134,24 @@ func heightBalanced(x *node) bool {
 }
 
 func TestRebalance(t *testing.T) {
-	var expected []int
+	var expected []byte
 
 	for n := 1; n < 100; n++ {
-		expected = append(expected, n-1)
+		expected = append(expected, byte(n-1))
 
 		for tc := 1; tc <= n; tc++ {
 			p := rand.Perm(n)
 			tree := New(rand.Float64()/2 + 0.5)
 
 			for _, x := range p {
-				tree.Ins(Key(x))
+				tree.Ins(byte(x))
 			}
 
 			tree.root = rebalance(tree.root, n)
 
-			var seq []int
+			var seq []byte
 			for it := tree.First(); it.Ok(); it = it.Next() {
-				seq = append(seq, int(it.Key()))
+				seq = append(seq, byte(it.Key()))
 			}
 
 			eq(t, seq, expected, p)

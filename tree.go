@@ -2,23 +2,22 @@ package scapegoat
 
 import "math"
 
-type Key int
+// key → byte
 
-func Less(a, b Key) bool {
-	return a < b
-}
-func Eq(a, b Key) bool {
-	return a == b
-}
-func cmp(x *node, k Key) (eq bool, idx int) {
-	if Less(x.key, k) {
-		return false, 1
+// cmp should compare two keys
+// first return value should indicate if both keys are equal
+// second should note into which child we should descend in order to look
+// for key k form this node
+func (n node) cmp(k byte) (bool, int) {
+	idx := 0
+	if n.key < k {
+		idx = 1
 	}
-	return Eq(x.key, k), 0
+	return k == n.key, idx
 }
 
 type node struct {
-	key Key
+	key byte
 	c   [2]*node
 }
 
@@ -33,7 +32,7 @@ func New(alfa float64) *Tree {
 	return &Tree{alfa: alfa}
 }
 
-func (t *Tree) Ins(k Key) bool {
+func (t *Tree) Ins(k byte) bool {
 	t.size++
 	if t.root == nil {
 		t.root = &node{key: k}
@@ -42,7 +41,7 @@ func (t *Tree) Ins(k Key) bool {
 
 	var path []*node
 	for x := t.root; x != nil; {
-		eq, i := cmp(x, k)
+		eq, i := x.cmp(k)
 		if eq {
 			t.size--
 			return false
@@ -53,7 +52,7 @@ func (t *Tree) Ins(k Key) bool {
 	}
 
 	x := path[len(path)-1]
-	_, j := cmp(x, k)
+	_, j := x.cmp(k)
 	x.c[j] = &node{key: k}
 	if t.size > t.maxsize {
 		t.maxsize = t.size
@@ -66,7 +65,7 @@ func (t *Tree) Ins(k Key) bool {
 	var scapegoat int
 	ssize := t.size
 	for i, childsize := len(path)-1, 1; i > 0; i-- {
-		x := path[i]
+		x = path[i]
 		ochildsize := subsize(x.c[j^1])
 		currsize := childsize + ochildsize + 1
 		if math.Max(float64(childsize), float64(ochildsize)) > float64(currsize)*t.alfa {
@@ -75,7 +74,7 @@ func (t *Tree) Ins(k Key) bool {
 			break
 		}
 		childsize = currsize
-		_, j = cmp(path[i-1], k)
+		_, j = path[i-1].cmp(k)
 	}
 
 	x = rebalance(path[scapegoat], ssize)
@@ -83,16 +82,16 @@ func (t *Tree) Ins(k Key) bool {
 		t.root = x
 		t.maxsize = ssize
 	} else {
-		_, i := cmp(path[scapegoat-1], k)
+		_, i := path[scapegoat-1].cmp(k)
 		path[scapegoat-1].c[i] = x
 	}
 
 	return true
 }
 
-func (t Tree) Exist(k Key) bool {
+func (t Tree) Exist(k byte) bool {
 	for x := t.root; x != nil; {
-		eq, i := cmp(x, k)
+		eq, i := x.cmp(k)
 		if eq {
 			return true
 		}
@@ -101,11 +100,11 @@ func (t Tree) Exist(k Key) bool {
 	return false
 }
 
-func (t *Tree) Del(k Key) bool {
+func (t *Tree) Del(k byte) bool {
 	p := &t.root
 	x := t.root
 	for x != nil {
-		eq, i := cmp(x, k)
+		eq, i := x.cmp(k)
 		if eq {
 			break
 		}
@@ -119,7 +118,7 @@ func (t *Tree) Del(k Key) bool {
 
 	if x.c[0] != nil && x.c[1] != nil {
 		y := x.c[1]
-		p := &x.c[1]
+		p = &x.c[1]
 		for y.c[0] != nil {
 			p = &y.c[0]
 			y = y.c[0]
@@ -210,7 +209,7 @@ func (it iterator) Next() iterator {
 }
 
 // User must be sure that Ok() is true before call.
-func (it iterator) Key() Key {
+func (it iterator) Key() byte {
 	return it[len(it)-1].key
 }
 
