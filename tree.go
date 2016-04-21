@@ -1,4 +1,4 @@
-package scapegoat
+package tree
 
 import (
 	"errors"

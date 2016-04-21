@@ -4,7 +4,7 @@
 // or   go build   -tags=graphviz
 // to support building this method
 
-package scapegoat
+package tree
 
 import (
 	"fmt"
