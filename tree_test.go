@@ -34,7 +34,7 @@ func TestInsert(t *testing.T) {
 	}
 
 	var seq []byte
-	for it := tree.First(); it.Ok(); it = it.Next() {
+	for it := tree.First(); it.Ok(); it.Inc() {
 		seq = append(seq, it.Key())
 	}
 
@@ -150,13 +150,39 @@ func TestRebalance(t *testing.T) {
 			tree.root = rebalance(tree.root, n)
 
 			var seq []byte
-			for it := tree.First(); it.Ok(); it = it.Next() {
+			for it := tree.First(); it.Ok(); it.Inc() {
 				seq = append(seq, byte(it.Key()))
 			}
 
 			eq(t, seq, expected, p)
 			eq(t, heightBalanced(tree.root), true)
 		}
+	}
+}
+
+func TestIter(t *testing.T) {
+	p := rand.Perm(100)
+	tree := New(.6)
+	for _, x := range p {
+		tree.Ins(byte(x))
+	}
+	for it, exp := tree.Last(), byte(99); it.Ok(); it.Dec() {
+		eq(t, it.Key(), exp)
+		exp--
+	}
+	it := tree.First()
+	it.Inc()
+	it.Dec()
+	eq(t, it.Key(), byte(0))
+
+	for it.Key() != 41 {
+		it.Inc()
+	}
+	for i := 0; i < 10; i++ {
+		eq(t, it.Key(), byte(41))
+		it.Inc()
+		eq(t, it.Key(), byte(42))
+		it.Dec()
 	}
 }
 

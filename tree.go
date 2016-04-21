@@ -1,6 +1,11 @@
 package scapegoat
 
-import "math"
+import (
+	"errors"
+	"math"
+)
+
+var ErrMovePastEnd = errors.New("tree: iterator moved past to end")
 
 // key → byte
 
@@ -26,6 +31,10 @@ type Tree struct {
 	alfa    float64
 	size    int
 	maxsize int
+}
+
+type Iter struct {
+	stack []*node
 }
 
 func New(alfa float64) *Tree {
@@ -154,8 +163,8 @@ func rebalance(x *node, subsize int) *node {
 	even := d[:0]
 	odd := d[evenLeft:evenLeft]
 
-	for it := first(x); it.Ok(); {
-		x := it[len(it)-1]
+	for it := first(0, &Iter{stack: []*node{x}}); it.Ok(); it.Inc() {
+		x := it.top()
 
 		if evenLeft > 0 && len(even) == len(odd) {
 			even = append(even, x)
@@ -163,8 +172,6 @@ func rebalance(x *node, subsize int) *node {
 		} else {
 			odd = append(odd, x)
 		}
-
-		it = goleft(x.c[1], it[:len(it)-1])
 	}
 
 	for _, x := range d {
@@ -183,39 +190,58 @@ func rebalance(x *node, subsize int) *node {
 	return odd[fullCnt/2]
 }
 
-type iterator []*node
+func (it *Iter) top() *node { return it.stack[len(it.stack)-1] }
+func (it *Iter) pop() *node { x := it.top(); it.stack = it.stack[:len(it.stack)-1]; return x }
 
-func (t Tree) First() iterator {
-	return first(t.root)
-}
-
-func (it iterator) Ok() bool {
-	return len(it) > 0
-}
-
-// User must be sure that Ok() is true before call.
-func (it iterator) Next() iterator {
-	x := it[len(it)-1].c[1]
-	it = it[:len(it)-1]
-	return goleft(x, it)
-}
-
-// User must be sure that Ok() is true before call.
-func (it iterator) Key() byte {
-	return it[len(it)-1].key
-}
-
-// Make iterator over subtree rooted at given node.
-func first(x *node) iterator {
-	return goleft(x, iterator{})
-}
-
-func goleft(x *node, it iterator) iterator {
-	for ; x != nil; x = x.c[0] {
-		it = append(it, x)
+func first(dir int, it *Iter) *Iter {
+	x := it.pop()
+	if x == nil {
+		return it
 	}
+
+	for x.c[dir] != nil {
+		it.stack = append(it.stack, x)
+		x = x.c[dir]
+	}
+	it.stack = append(it.stack, x)
 	return it
 }
+
+func move(dir int, it *Iter) error {
+	x := it.pop()
+	if x == nil {
+		return ErrMovePastEnd
+	}
+	if x.c[dir^1] == nil {
+		for {
+			if len(it.stack) == 0 {
+				return nil
+			}
+
+			if it.top().c[dir] == x {
+				x = it.pop()
+				it.stack = append(it.stack, x)
+				return nil
+			}
+
+			x = it.pop()
+		}
+	}
+	it.stack = append(it.stack, x)
+	x = x.c[dir^1]
+	it.stack = append(it.stack, x)
+	first(dir, it)
+	return nil
+}
+
+func (t Tree) First() *Iter { return first(0, &Iter{stack: []*node{t.root}}) }
+func (t Tree) Last() *Iter  { return first(1, &Iter{stack: []*node{t.root}}) }
+func (it *Iter) Inc() error { return move(0, it) }
+func (it *Iter) Dec() error { return move(1, it) }
+func (it *Iter) Ok() bool   { return len(it.stack) > 0 }
+
+// User must be sure that Ok() is true before call.
+func (it *Iter) Key() byte { return it.top().key }
 
 func subsize(x *node) int {
 	if x == nil {
